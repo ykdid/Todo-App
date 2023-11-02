@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="todo.css">
+    <title>Document</title>
+
+   
+</head>
+<body> 
+
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card" style="margin-top: 20px;">    
+                    <div class="card-header">
+                        ToDo
+                    </div>
+                    <div class="card-body">
+                        <form >
+                            <div class="input-group">
+                                <input type="text"  id="txtTaskName" class="form-control">
+                                <button type="submit" class="btn btn-primary"  id="btnAddNewTask">Add</button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+
+                <div class="card mt-3"> 
+                    <div class="card-header controls">
+                        <div class="filters ">
+                            <span class="active" id="all">All</span>
+                            <span  id="pending">To Do</span>
+                            <span  id="completed">Completed</span>
+                        </div>
+                        <button  type="submit" class="btn btn-danger btn-sm float-end" id="btnClearTask">Clear All</button>
+                    </div>
+                    <ul id="task-list" class="list-group list-group-flush ">
+                      
+                    </ul>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+  
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>   
+    <script>   
+       "use strict";
+
+       let gorevListesi = [];
+
+       if(localStorage.getItem("gorevListesi") != null){
+            gorevListesi = JSON.parse(localStorage.getItem("gorevListesi"));
+       }
+
+       let editId;
+       let isEditTask = false;
+       const taskInput = document.querySelector("#txtTaskName");
+       const btnClear = document.querySelector("#btnClearTask");
+       const filters = document.querySelectorAll(".filters span");
+       displayTasks("all");
+
+       function displayTasks(filter){
+        
+        let ul = document.getElementById("task-list"); 
+        ul.innerHTML = "";
+
+        if(gorevListesi.length == 0 ){
+            ul.innerHTML = "<p class = 'p-3 m-0'> List is empty. </p>"
+        }
+
+        for(let gorev of gorevListesi){
+            let completed = gorev.situation == "completed" ? "checked" :"";
+
+            if(filter == gorev.situation || filter == "all"){
+
+                let li = `
+                <li class="task list-group-item">
+                    <div class="form-check">
+                        <input type="checkbox" onclick="updateStatus(this)" id="${gorev.id}" class="form-check-input" ${completed}>
+                        <label for="${gorev.id}" class="form-check-label ${completed}" >${gorev.gorevAdi}</label>                            
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-link dropdown-toggle float-end" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-ellipsis"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a onclick="deleteTask(${gorev.id})" class="dropdown-item" href="#"><i class="fa-solid fa-trash-can"></i> Delete</a></li>
+                            <li><a onclick='editTask(${gorev.id}, "${gorev.gorevAdi}")' class="dropdown-item" href="#"><i class="fa-solid fa-pen-to-square"></i> Edit</a></li>
+                            
+                        </ul>
+                    </div>
+                    
+                 </li> `;
+            
+                ul.insertAdjacentHTML("beforeend" ,li);
+                // ul.insertAdjacentHTML("afterbegin",li);
+        }
+            
+        }
+       }
+
+
+       document.querySelector("#btnAddNewTask").addEventListener("click" , newTask);
+       document.querySelector("#btnAddNewTask").addEventListener("keypress", function(){
+        if(event.key == "Enter"){
+            document.getElementById("btnAddNewTask").click();
+        }
+       });
+
+       for(let span of filters){
+            span.addEventListener("click" ,function(){
+                document.querySelector("span.active").classList.remove("active");
+                span.classList.add("active");
+                displayTasks(span.id);
+
+
+            })
+       }
+
+       function newTask(event){
+
+        
+
+        if(taskInput.value == ""){
+            alert("You must write task");
+        }
+        else{
+            if(!isEditTask){
+                gorevListesi.push({"id" : gorevListesi.length + 1, "gorevAdi" : taskInput.value , "situation" : "pending"});
+                
+            }
+            else{
+                for(let gorev of gorevListesi){
+
+                    if(gorev.id == editId){
+                        gorev.gorevAdi = taskInput.value;
+
+                    }
+                    isEditTask = false;
+
+                }
+
+            }
+            taskInput.value="";
+            displayTasks(document.querySelector("span.active").id);
+            localStorage.setItem("gorevListesi", JSON.stringify(gorevListesi));
+            
+        }
+
+        event.preventDefault();
+  
+       }
+
+       function deleteTask(id){
+            let deletedId;
+             for(let index in gorevListesi){
+                 if(gorevListesi[index].id ==  id){
+                    deletedId = index;
+
+                 }
+            }
+
+            gorevListesi.splice(deletedId , 1);
+            displayTasks(document.querySelector("span.active").id);
+            localStorage.setItem("gorevListesi", JSON.stringify(gorevListesi));
+
+       }
+       
+       function editTask(taskId, taskName){
+
+        editId = taskId;
+        isEditTask = true;
+        taskInput.value = taskName;
+        taskInput.focus();
+        taskInput.classList.add("active");
+
+       }
+
+       btnClear.addEventListener("click", function() {
+        gorevListesi.splice(0, gorevListesi.length);
+        localStorage.setItem("gorevListesi", JSON.stringify(gorevListesi));
+        displayTasks();
+       });
+        
+       function updateStatus(selectedTask){
+        
+        let label = selectedTask.nextElementSibling;
+        let situation;
+
+        if(selectedTask.checked){
+            label.classList.add("checked");
+            situation = "completed";
+
+        }
+        else{
+            label.classList.remove("checked");
+            situation = "pending";
+        }
+
+        for(let gorev of gorevListesi){
+            
+            if(gorev.id == selectedTask.id){
+                gorev.situation = situation;
+            }
+        }
+
+        displayTasks(document.querySelector("span.active").id);
+        localStorage.setItem("gorevListesi", JSON.stringify(gorevListesi));
+
+       }
+
+
+    </script>
+
+</body>
+</html>
